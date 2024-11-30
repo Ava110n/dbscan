@@ -1,0 +1,79 @@
+import pygame
+import numpy as np
+from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def distance(self, other_point):
+        return np.sqrt((self.x-other_point.x)**2+(self.y-other_point.y)**2)
+
+def add_near_points(point):
+    new_points = []
+    for i in range(np.random.randint(3,5)):
+        x = point.x + np.random.randint(-20,20)
+        y = point.y + np.random.randint(-20,20)
+        new_points.append(Point(x,y))
+    return new_points
+
+def get_array(points):
+    values = np.zeros((len(points), 2))
+    for i in range(len(points)):
+        values[i][0] = points[i].x
+        values[i][1] = points[i].y
+    return values
+
+
+def main():
+    colors = ["blue", "green", "cyan", "yellow", "purple", "red"]
+    r = 3
+    points = []
+    pygame.init()
+    screen = pygame.display.set_mode((600,400), pygame.RESIZABLE)
+    screen.fill("#FFFFFF")
+    pygame.display.update()
+    is_pressed = False
+    while(True):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            #if event.type == pygame.MOUSEMOTION:
+                #if pygame.mouse.get_pressed()[0]:
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    is_pressed = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    is_pressed = False
+            if event.type == pygame.MOUSEMOTION and is_pressed:
+                pos = event.pos
+                p = Point(*pos)
+                if len(points)==0:
+                    points.append(Point(*pos))
+                    pygame.draw.circle(screen, "black", pos, r)
+                elif p.distance(points[-1])>20:
+                    new_points = add_near_points(p)
+                    for point in new_points:
+                        points.append(point)
+                        pygame.draw.circle(screen, "black", (point.x, point.y), r)
+                    points.append(Point(*pos))
+                    pygame.draw.circle(screen, "black", pos, r)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:#pygame.K_r
+                    dbscan = DBSCAN(eps = 50, min_samples = 3)
+                    dbscan.fit(get_array(points))
+                    labels = dbscan.labels_
+                    for i in range(len(points)):
+                        pygame.draw.circle(screen, colors[labels[i]], (points[i].x, points[i].y), r)
+                    #plt.scatter(get_array(points)[:,0], get_array(points)[:,1], c = labels)
+                    #plt.show()
+            pygame.display.flip()
+            
+
+
+if __name__ == '__main__':
+    main()
